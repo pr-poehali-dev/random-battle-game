@@ -103,7 +103,7 @@ const Index = () => {
             <CardContent>
               <div className="flex gap-3">
                 {currentItems.map((item, index) => (
-                  <div key={index} className="text-center">
+                  <div key={index} className="text-center space-y-2">
                     <Button
                       onClick={() => useItem(item)}
                       className={`w-20 h-20 rounded-xl ${getRarityColor(item.rarity)} hover:scale-105 transition-transform`}
@@ -113,7 +113,10 @@ const Index = () => {
                         {item.name.split(' ')[0]}
                       </div>
                     </Button>
-                    <Badge variant="outline" className="mt-2 text-xs">
+                    <div className="max-w-20 text-xs text-gray-700 font-medium leading-tight">
+                      {item.name.substring(2)}
+                    </div>
+                    <Badge variant="outline" className="text-xs">
                       {item.damage} урона
                     </Badge>
                   </div>
