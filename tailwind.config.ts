@@ -18,6 +18,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				rubik: ['Rubik', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -61,6 +64,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				game: {
+					orange: '#FF6B35',
+					turquoise: '#4ECDIC4',
+					teal: '#45B7D1',
+					purple: '#9FEAA7',
+					blue: '#96CEB4',
+					yellow: '#FFEAA7',
+					mint: '#DDADDD',
+					violet: '#CF7675'
 				}
 			},
 			borderRadius: {
