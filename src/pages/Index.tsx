@@ -1,152 +1,187 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 
-const Index = () => {
-  const [playerName, setPlayerName] = useState('');
-  const [gameStarted, setGameStarted] = useState(false);
-  const [showInterface, setShowInterface] = useState(false);
-  const [hp, setHp] = useState(100);
+// Интерфейсы для игры
+interface RandomItem {
+  name: string;
+  damage: number;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  description: string;
+}
 
-  const randomItems = [
-    { name: '🗡️ Супер длинный меч похожий на кота', damage: 25, rarity: 'legendary' },
-    { name: '🌀 Портальная пушка (стреляет не туда)', damage: 30, rarity: 'epic' },
-    { name: '🚛 Танк с радиоактивным двигателем', damage: 50, rarity: 'legendary' },
-    { name: '🎯 Самонаводящийся бумеранг', damage: 20, rarity: 'rare' },
-    { name: '⚡ Молния в банке', damage: 35, rarity: 'epic' },
-    { name: '🔮 Кристалл замедления времени', damage: 15, rarity: 'common' }
+interface Player {
+  id: string;
+  name: string;
+  hp: number;
+  maxHp: number;
+  x: number;
+  y: number;
+  items: RandomItem[];
+}
+
+// Генератор рандомных предметов
+const generateRandomItem = (): RandomItem => {
+  const prefixes = ['🗡️', '🏹', '🔫', '💣', '🛡️', '⚡', '🔥', '❄️', '☢️', '🌟'];
+  const weapons = [
+    'Супер длинный меч похожий на кота',
+    'Портальная пушка',
+    'Танк с радиоактивным двигателем',
+    'Волшебная палочка хаоса',
+    'Лазерный бумеранг',
+    'Взрывающийся банан',
+    'Киберчеловеческий кулак',
+    'Молния в банке',
+    'Космический молоток',
+    'Невидимый нож'
   ];
+  
+  const descriptions = [
+    'стреляет не туда куда целишься',
+    'имеет странные побочные эффекты',
+    'работает только по понедельникам',
+    'издает смешные звуки',
+    'светится в темноте',
+    'имеет собственное мнение',
+    'случайно меняет цвет',
+    'телепортирует врагов'
+  ];
+  
+  const rarities: RandomItem['rarity'][] = ['common', 'rare', 'epic', 'legendary'];
+  const rarity = rarities[Math.floor(Math.random() * rarities.length)];
+  
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const weapon = weapons[Math.floor(Math.random() * weapons.length)];
+  const description = descriptions[Math.floor(Math.random() * descriptions.length)];
+  
+  const baseDamage = rarity === 'legendary' ? 50 : rarity === 'epic' ? 35 : rarity === 'rare' ? 25 : 15;
+  const damage = baseDamage + Math.floor(Math.random() * 20);
+  
+  return {
+    name: `${prefix} ${weapon}`,
+    damage,
+    rarity,
+    description
+  };
+};
 
-  const [currentItems, setCurrentItems] = useState([
-    randomItems[0], randomItems[1], randomItems[2]
-  ]);
+// Цвета редкости
+const getRarityColor = (rarity: RandomItem['rarity']) => {
+  switch (rarity) {
+    case 'legendary': return 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white';
+    case 'epic': return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
+    case 'rare': return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
+    default: return 'bg-gradient-to-r from-gray-400 to-gray-600 text-white';
+  }
+};
 
-  const handleJoinGame = () => {
+const Index = () => {
+  const [gameState, setGameState] = useState<'login' | 'loading' | 'playing'>('login');
+  const [playerName, setPlayerName] = useState('');
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [currentItems, setCurrentItems] = useState<RandomItem[]>([]);
+
+  // Инициализация игрока
+  const initializePlayer = useCallback(() => {
+    const newPlayer: Player = {
+      id: 'player1',
+      name: playerName,
+      hp: 100,
+      maxHp: 100,
+      x: 50, // центр карты
+      y: 50,
+      items: []
+    };
+    
+    // Генерируем начальные предметы
+    const initialItems = Array.from({ length: 4 }, () => generateRandomItem());
+    
+    setPlayer(newPlayer);
+    setCurrentItems(initialItems);
+    setGameState('playing');
+  }, [playerName]);
+
+  // Обработчик входа в игру
+  const handleLogin = () => {
     if (playerName.trim()) {
-      setGameStarted(true);
-      setTimeout(() => setShowInterface(true), 1000);
+      setGameState('loading');
+      setTimeout(initializePlayer, 2000);
     }
   };
 
-  const generateRandomItems = () => {
-    const shuffled = [...randomItems].sort(() => 0.5 - Math.random());
-    setCurrentItems(shuffled.slice(0, 3));
+  // Использование предмета
+  const useItem = (item: RandomItem) => {
+    console.log(`Использую ${item.name} (${item.damage} урона)`);
+    
+    // Удаляем использованный предмет и добавляем новый
+    setCurrentItems(prev => {
+      const newItems = prev.filter(i => i !== item);
+      newItems.push(generateRandomItem());
+      return newItems;
+    });
   };
 
-  const useItem = (item: any) => {
-    setHp(prev => Math.max(0, prev - 10));
-    generateRandomItems();
-  };
-
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'legendary': return 'bg-game-purple';
-      case 'epic': return 'bg-game-violet'; 
-      case 'rare': return 'bg-game-blue';
-      default: return 'bg-game-teal';
-    }
-  };
-
-  if (showInterface) {
+  // Экран входа
+  if (gameState === 'login') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-game-turquoise via-game-blue to-game-teal font-rubik relative overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url('/img/6f867911-c1f9-4f60-af90-4cd142f72d53.jpg')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        />
-        
-        {/* HP Display */}
-        <div className="absolute top-4 left-4 z-10">
-          <Card className="bg-white/90 backdrop-blur-sm border-2 border-white/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Icon name="Heart" className="text-red-500" size={24} />
-                <div>
-                  <div className="text-sm font-medium text-gray-600">HP</div>
-                  <Progress value={hp} className="w-32 h-3" />
-                  <div className="text-xs text-gray-500 mt-1">{hp}/100</div>
+      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-red-500 to-purple-600 flex items-center justify-center font-rubik">
+        <Card className="w-96 bg-white/95 backdrop-blur-sm border-4 border-white/50 shadow-2xl">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-purple-600 bg-clip-text text-transparent">
+              ⚔️ RANDOM BATTLE
+            </CardTitle>
+            <p className="text-gray-600 mt-2">Арена рандомных сражений</p>
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              {Array.from({ length: 6 }, () => generateRandomItem()).map((item, index) => (
+                <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
+                  <div className="text-xl mb-1">{item.name.split(' ')[0]}</div>
+                  <div className="text-xs text-gray-500">{item.damage}</div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Game Area */}
-        <div className="flex items-center justify-center min-h-screen relative z-5">
-          <div className="text-center space-y-6">
-            <div className="bg-white/10 backdrop-blur-md rounded-full w-24 h-24 mx-auto flex items-center justify-center border-4 border-white/30">
-              <Icon name="User" size={32} className="text-white" />
+              ))}
             </div>
-            <div className="text-white font-bold text-lg">
-              Игрок: {playerName}
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Имя бойца
+              </label>
+              <Input
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="Введите ваше имя..."
+                className="text-center text-lg"
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+              />
             </div>
-            <div className="text-white/80">
-              Зона видимости: 10м • Скорость: 5м/с
-            </div>
-          </div>
-        </div>
-
-        {/* Items Panel */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
-          <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-center text-game-orange">Ваши предметы</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3">
-                {currentItems.map((item, index) => (
-                  <div key={index} className="text-center space-y-2">
-                    <Button
-                      onClick={() => useItem(item)}
-                      className={`w-20 h-20 rounded-xl ${getRarityColor(item.rarity)} hover:scale-105 transition-transform`}
-                      variant="secondary"
-                    >
-                      <div className="text-2xl">
-                        {item.name.split(' ')[0]}
-                      </div>
-                    </Button>
-                    <div className="max-w-20 text-xs text-gray-700 font-medium leading-tight">
-                      {item.name.substring(2)}
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {item.damage} урона
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-              <Button 
-                onClick={generateRandomItems}
-                className="w-full mt-4 bg-game-orange hover:bg-game-orange/90"
-              >
-                <Icon name="Shuffle" size={16} className="mr-2" />
-                Новые предметы
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+            <Button 
+              onClick={handleLogin}
+              disabled={!playerName.trim()}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-lg py-6"
+            >
+              <Icon name="Gamepad2" size={20} className="mr-2" />
+              🚀 Войти в битву
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (gameStarted) {
+  // Экран загрузки
+  if (gameState === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-game-orange via-game-yellow to-game-purple font-rubik flex items-center justify-center">
-        <div className="text-center space-y-6 animate-pulse">
+      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-red-500 to-purple-600 flex items-center justify-center">
+        <div className="text-center">
           <div className="text-6xl font-bold text-white drop-shadow-lg">
             RANDOM BATTLE
           </div>
-          <div className="text-2xl text-white/90">
+          <div className="text-2xl text-white/90 mt-4">
             Генерирую арену для {playerName}...
           </div>
-          <div className="flex justify-center space-x-2">
+          <div className="flex justify-center space-x-2 mt-6">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
@@ -160,80 +195,104 @@ const Index = () => {
     );
   }
 
+  // Игровой экран
   return (
-    <div className="min-h-screen bg-gradient-to-br from-game-turquoise via-game-blue to-game-purple font-rubik relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 font-rubik relative overflow-hidden">
+      {/* Игровая карта */}
       <div 
         className="absolute inset-0 opacity-30"
         style={{
-          backgroundImage: `url('/img/6f867911-c1f9-4f60-af90-4cd142f72d53.jpg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
+          backgroundImage: `
+            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
+          `
         }}
       />
-      
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-2 border-white/50 shadow-2xl">
-          <CardHeader className="text-center space-y-4">
-            <div className="space-y-2">
-              <div className="text-5xl font-bold bg-gradient-to-r from-game-orange to-game-purple bg-clip-text text-transparent">
-                RANDOM BATTLE
-              </div>
-              <div className="text-lg text-gray-600 font-medium">
-                Боевая арена с рандомными предметами
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                {randomItems.slice(0, 6).map((item, index) => (
-                  <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">{item.name.split(' ')[0]}</div>
-                    <div className="text-xs text-gray-500">{item.damage}</div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="bg-game-yellow/20 p-4 rounded-lg border-l-4 border-game-orange">
-                <div className="font-semibold text-game-orange mb-2">Особенности игры:</div>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Управление как в Brawl Stars</li>
-                  <li>• Рандомная генерация карт</li>
-                  <li>• Размер карты: больше 100м</li>
-                  <li>• HP: 100 | Скорость: 5м/с</li>
-                </ul>
-              </div>
-            </div>
 
-            <div className="space-y-4">
+      {/* HP индикатор */}
+      <div className="absolute top-6 left-6 z-10">
+        <Card className="bg-white/90 backdrop-blur-sm border-2 border-white/50">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Icon name="Heart" className="text-red-500" size={24} />
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Введите ваше имя:
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Введите никнейм..."
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  className="text-center text-lg border-2 border-game-turquoise/50 focus:border-game-orange"
-                  onKeyDown={(e) => e.key === 'Enter' && handleJoinGame()}
-                />
+                <div className="text-2xl font-bold text-red-600">{player?.hp}/100</div>
+                <div className="w-32 h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-300"
+                    style={{ width: `${(player?.hp || 0)}%` }}
+                  />
+                </div>
               </div>
-              
-              <Button 
-                onClick={handleJoinGame}
-                disabled={!playerName.trim()}
-                className="w-full bg-gradient-to-r from-game-orange to-game-purple hover:from-game-purple hover:to-game-orange text-white font-bold py-3 text-lg rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                <Icon name="Gamepad2" size={20} className="mr-2" />
-                Войти в битву!
-              </Button>
             </div>
+            <div className="text-gray-600 text-sm mt-2">
+              Зона видимости: 10м • Скорость: 5м/с
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <div className="text-center text-xs text-gray-500">
-              🚀 Система как в Gartic Phone - никаких аккаунтов, просто играй!
+      {/* Игрок на карте */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="w-12 h-12 bg-yellow-400 rounded-full border-4 border-white shadow-lg animate-pulse flex items-center justify-center">
+          <Icon name="User" size={24} className="text-gray-800" />
+        </div>
+        <div className="text-center mt-2 text-white font-bold drop-shadow-lg">
+          {playerName}
+        </div>
+      </div>
+
+      {/* Панель предметов */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
+        <Card className="bg-white/95 backdrop-blur-sm border-2 border-white/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-center text-orange-600">⚔️ Ваши предметы</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              {currentItems.map((item, index) => (
+                <div key={index} className="text-center space-y-2">
+                  <Button
+                    onClick={() => useItem(item)}
+                    className={`w-20 h-20 rounded-xl ${getRarityColor(item.rarity)} hover:scale-105 transition-transform`}
+                    variant="secondary"
+                  >
+                    <div className="text-2xl">
+                      {item.name.split(' ')[0]}
+                    </div>
+                  </Button>
+                  <div className="max-w-20 text-xs text-gray-700 font-medium leading-tight">
+                    {item.name.substring(2)}
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {item.damage} урона
+                  </Badge>
+                </div>
+              ))}
             </div>
+            <div className="text-center mt-3 text-sm text-gray-600">
+              Нажмите на предмет для использования
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Мини-карта */}
+      <div className="absolute top-6 right-6 z-10">
+        <Card className="bg-white/90 backdrop-blur-sm border-2 border-white/50">
+          <CardContent className="p-3">
+            <div className="w-24 h-24 bg-gradient-to-br from-green-200 to-blue-200 rounded-lg relative">
+              <div 
+                className="w-2 h-2 bg-yellow-400 rounded-full absolute"
+                style={{ 
+                  left: `${(player?.x || 50)}%`, 
+                  top: `${(player?.y || 50)}%`,
+                  transform: 'translate(-50%, -50%)'
+                }}
+              />
+            </div>
+            <div className="text-xs text-center mt-1 text-gray-600">Карта 100м+</div>
           </CardContent>
         </Card>
       </div>
